@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soccer Analysis - Video Processing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover {
+            border-color: #764ba2;
+            background-color: #f8f9ff;
+        }
+        
+        .upload-area.dragover {
+            background-color: #f0f4ff;
+            border-color: #764ba2;
+        }
+        
+        .upload-area input {
+            display: none;
+        }
+        
+        .upload-label {
+            display: block;
+            cursor: pointer;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .upload-text {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .upload-subtext {
+            color: #999;
+            font-size: 14px;
+        }
+        
+        #filename {
+            margin-top: 10px;
+            color: #764ba2;
+            font-weight: 500;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-process {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-process:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-process:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-reset {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .btn-reset:hover {
+            background: #d0d0d0;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .status.show {
+            display: block;
+        }
+        
+        .status.processing {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #90caf9;
+        }
+        
+        .status.success {
+            background-color: #e8f5e9;
+            color: #388e3c;
+            border: 1px solid #81c784;
+        }
+        
+        .status.error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef5350;
+        }
+        
+        .status-text {
+            margin: 0;
+        }
+        
+        .download-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .btn-download {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            color: white;
+            width: 100%;
+        }
+        
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
+        }
+        
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚽ Soccer Analysis</h1>
+        
+        <div class="upload-area" id="uploadArea">
+            <label class="upload-label" for="videoInput">
+                <div class="upload-icon">📹</div>
+                <div class="upload-text">Click to upload or drag and drop</div>
+                <div class="upload-subtext">MP4, AVI, MOV...</div>
+            </label>
+            <input type="file" id="videoInput" accept="video/*" />
+            <div id="filename"></div>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-process" id="processBtn" disabled>Process Video</button>
+            <button class="btn-reset" id="resetBtn">Reset</button>
+        </div>
+        
+        <div class="status" id="status">
+            <p class="status-text" id="statusText"></p>
+        </div>
+        
+        <div id="loader" class="loader" style="display: none;"></div>
+        
+        <div class="download-section" id="downloadSection" style="display: none;">
+            <button class="btn-download" id="downloadBtn">⬇️ Download Processed Video</button>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const videoInput = document.getElementById('videoInput');
+        const processBtn = document.getElementById('processBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const filenameDisplay = document.getElementById('filename');
+        const status = document.getElementById('status');
+        const statusText = document.getElementById('statusText');
+        const loader = document.getElementById('loader');
+        const downloadSection = document.getElementById('downloadSection');
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        let selectedFile = null;
+        let processedFileName = null;
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                videoInput.files = files;
+                handleFileSelect();
+            }
+        });
+
+        // File selection
+        videoInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = videoInput.files[0];
+            if (file) {
+                selectedFile = file;
+                filenameDisplay.textContent = '✓ ' + file.name;
+                processBtn.disabled = false;
+                clearStatus();
+                downloadSection.style.display = 'none';
+            }
+        }
+
+        // Process button
+        processBtn.addEventListener('click', async () => {
+            if (!selectedFile) {
+                showStatus('Please select a video file', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                processBtn.disabled = true;
+                loader.style.display = 'block';
+                showStatus('Uploading and processing video...', 'processing');
+
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    processedFileName = data.result_filename;
+                    
+                    // Store stats, filename, and request_id in localStorage
+                    localStorage.setItem('processingStats', JSON.stringify(data.statistics));
+                    localStorage.setItem('processingFilename', data.result_filename);
+                    localStorage.setItem('processingRequestId', data.request_id);
+                    
+                    // Navigate to results page
+                    setTimeout(() => {
+                        window.location.href = '/results';
+                    }, 500);
+                } else {
+                    const error = await response.json();
+                    showStatus('Error: ' + (error.detail || 'Failed to process video'), 'error');
+                }
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+            } finally {
+                processBtn.disabled = false;
+                loader.style.display = 'none';
+            }
+        });
+
+        // Reset button
+        resetBtn.addEventListener('click', () => {
+            videoInput.value = '';
+            selectedFile = null;
+            filenameDisplay.textContent = '';
+            processBtn.disabled = true;
+            clearStatus();
+            downloadSection.style.display = 'none';
+        });
+
+        // Download button
+        downloadBtn.addEventListener('click', () => {
+            if (processedFileName) {
+                window.location.href = `/download/${processedFileName}`;
+            }
+        });
+
+        function showStatus(message, type) {
+            statusText.textContent = message;
+            status.className = 'status show ' + type;
+        }
+
+        function clearStatus() {
+            status.classList.remove('show');
+        }
+    </script>
+</body>
+</html>

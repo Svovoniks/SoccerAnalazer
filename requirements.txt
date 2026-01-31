@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-multipart
+opencv-python
+ultralytics
+supervision
+torch
+numpy
+matplotlib
+reportlab
+
